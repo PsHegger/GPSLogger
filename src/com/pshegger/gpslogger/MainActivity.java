@@ -51,35 +51,42 @@ public class MainActivity extends Activity implements LocationListener {
 		filename.append("/gpslogs/log-");
 		filename.append(date.getYear()+1900);
 		filename.append(String.format("%02d", date.getMonth()));
-		filename.append(String.format("%02d", date.getDay()));
+		filename.append(String.format("%02d", date.getDay()+1));
 		filename.append("-");
 		filename.append(String.format("%02d", date.getHours()));
 		filename.append(String.format("%02d", date.getMinutes()));
-		filename.append(".txt");
+		filename.append(".gpx");
 		
 		return filename.toString();
 	}
 	
 	private String getLocationRow(Location location) {
-		StringBuilder builder = new StringBuilder();
+		Date date = new Date(System.currentTimeMillis());
+		StringBuilder dateStr = new StringBuilder();
+		dateStr.append(date.getYear()+1900);
+		dateStr.append('-');
+		dateStr.append(String.format("%02d", date.getMonth()));
+		dateStr.append('-');
+		dateStr.append(String.format("%02d", date.getDay()+1));
+		dateStr.append('T');
+		dateStr.append(String.format("%02d", date.getHours()));
+		dateStr.append(':');
+		dateStr.append(String.format("%02d", date.getMinutes()));
+		dateStr.append(':');
+		dateStr.append(String.format("%02d", date.getSeconds()));
+		dateStr.append(".000000");
 		
-		builder.append(System.currentTimeMillis());
-		builder.append(";");
-		builder.append(location.getLatitude());
-		builder.append(";");
-		builder.append(location.getLongitude());
-		builder.append(";");
-		builder.append(location.getAltitude());
-		builder.append(";");
-		builder.append(location.getAccuracy());
+		String ret = String.format("<trkpt lat=\"%.16f\" lon=\"%.16f\"><time>%s</time><name>#</name><desc>accuracy: %f</desc></trkpt>", location.getLatitude(), location.getLongitude(), dateStr.toString(), location.getAccuracy());
 		
-		return builder.toString();
+		return ret;
 	}
 
 	@Override
 	protected void onPause() {
-		if (output != null)
+		if (output != null) {
+			output.println("</trkseg></trk></gpx>");
 			output.close();
+		}
 		lm.removeUpdates(this);
 		super.onPause();
 	}
@@ -88,6 +95,8 @@ public class MainActivity extends Activity implements LocationListener {
 	protected void onResume() {
 		try {
 			output = new PrintStream(new File(getFilename()));
+			output.println("<gpx xmlns=\"http://www.topografix.com/GPX/1/1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" version=\"1.1\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\" creator=\"GPSLogger by PsHegger\">");
+			output.println("<trk><trkseg>");
 		} catch (IOException e) {
 			output = null;
 			Log.e("GPSLogger", e.toString());
